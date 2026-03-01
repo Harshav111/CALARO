@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { Mic, MicOff, Square, Loader2, Sparkles, Volume2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { transcribeVoice } from "../api/voice";
 
@@ -13,9 +15,7 @@ export function VoiceRecorder({ onResult }) {
 
   useEffect(() => {
     return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
+      if (timerRef.current) clearInterval(timerRef.current);
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
         mediaRecorderRef.current.stop();
       }
@@ -50,9 +50,7 @@ export function VoiceRecorder({ onResult }) {
       chunksRef.current = [];
 
       recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          chunksRef.current.push(event.data);
-        }
+        if (event.data.size > 0) chunksRef.current.push(event.data);
       };
 
       recorder.onstop = async () => {
@@ -78,58 +76,92 @@ export function VoiceRecorder({ onResult }) {
     }
   };
 
+  const speak = (text) => {
+    if (!window.speechSynthesis) return;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.1;
+    utterance.pitch = 1;
+    window.speechSynthesis.speak(utterance);
+  };
+
   const sendForTranscription = async (blob) => {
     setIsProcessing(true);
     try {
       const result = await transcribeVoice(blob);
       if (result && typeof onResult === "function") {
         onResult(result);
+        if (result.items?.length > 0) {
+          const names = result.items.map(i => i.name).join(", ");
+          speak(`Recognized: ${names}. Adding to your log.`);
+        } else {
+          speak("I couldn't catch that. Please try again.");
+        }
       }
     } catch (err) {
-      const message =
-        err?.response?.data?.detail ||
-        "Unable to transcribe audio. Check your API key.";
-      setError(message);
+      setError("Transcription failed. Verify your backend status.");
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const label = isRecording ? "Tap to stop" : "Hold to record";
-
   return (
-    <div className="panel">
-      <div className="panel-header">
-        <h2>Voice capture (beta)</h2>
-        <p>
-          Describe your meal out loud. Audio is processed securely and never
-          stored.
-        </p>
-      </div>
-      <div className="voice-recorder">
+    <div className="voice-recorder-container">
+      <div className="voice-interface" style={{ position: "relative" }}>
+        <AnimatePresence>
+          {isRecording && (
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1.5, opacity: 0.1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              style={{ position: 'absolute', width: '100px', height: '100px', borderRadius: '50%', background: 'var(--accent-vibrant)', zIndex: 0 }}
+            />
+          )}
+        </AnimatePresence>
+
         <button
           type="button"
           className={`mic-btn ${isRecording ? "recording" : ""}`}
-          onMouseDown={handleStart}
-          onMouseUp={handleStop}
-          onTouchStart={handleStart}
-          onTouchEnd={handleStop}
+          onClick={isRecording ? handleStop : handleStart}
           disabled={isProcessing}
+          style={{ position: "relative", zIndex: 1 }}
         >
-          <span className="mic-dot" />
-          <span className="mic-label">
-            {isProcessing ? "Processing..." : label}
-          </span>
+          {isProcessing ? (
+            <Loader2 className="animate-spin" size={40} />
+          ) : isRecording ? (
+            <Square size={32} fill="white" />
+          ) : (
+            <Mic size={40} />
+          )}
         </button>
-        <div className="mic-meta">
-          <span className="timer">
-            {seconds.toString().padStart(2, "0")}s
-          </span>
-          <span className="hint">Short clips (5–20s) work best.</span>
+
+        <div style={{ textAlign: "center", marginTop: "1.5rem" }}>
+          <div style={{ fontSize: "1.5rem", fontWeight: "800", color: isRecording ? "var(--accent-vibrant)" : "var(--text-primary)" }}>
+            {isProcessing ? (
+              <span style={{ display: "flex", alignItems: "center", gap: "0.5rem", justifyContent: "center" }}>
+                <Sparkles size={20} color="var(--accent-active)" /> AI Syncing...
+              </span>
+            ) : isRecording ? (
+              `0:0${seconds}`
+            ) : (
+              "Tap to Speak"
+            )}
+          </div>
+          <p style={{ fontSize: "1rem", color: "var(--text-secondary)", marginTop: "0.5rem", fontWeight: "500" }}>
+            {isRecording ? "Listening to your meal description..." : "AI Voice Analysis Ready"}
+          </p>
         </div>
       </div>
-      {error && <div className="error-banner">{error}</div>}
+
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="error-banner"
+          style={{ marginTop: "2rem", background: "rgba(239, 68, 68, 0.1)", color: "#ef4444", border: "1px solid rgba(239, 68, 68, 0.2)" }}
+        >
+          {error}
+        </motion.div>
+      )}
     </div>
   );
 }
-

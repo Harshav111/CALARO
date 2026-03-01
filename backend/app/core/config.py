@@ -33,9 +33,13 @@ class Settings(BaseSettings):
 
     # AI
     OPENAI_API_KEY: str = "sk-placeholder"
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "mistral:latest"
+    WHISPER_MODEL: str = "base"
 
     class Config:
         env_file = ".env"
+        extra = "ignore"
 
 
 settings = Settings()

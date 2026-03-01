@@ -10,4 +10,8 @@ pydantic
 pydantic[email]
 pydantic-settings
 prometheus-fastapi-instrumentator
+llama-cpp-python
+httpx
 whisper
+numpy
+scipy

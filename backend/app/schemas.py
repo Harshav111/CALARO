@@ -82,3 +82,12 @@ class VoiceParseResponse(BaseModel):
     items: List[FoodItem]
 
 
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    email: EmailStr
+    otp: str
+    new_password: str = Field(min_length=8)
+

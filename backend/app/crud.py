@@ -87,3 +87,48 @@ def get_food_logs_for_user(
         .all()
     )
 
+
+from datetime import datetime, timedelta
+import secrets
+import string
+
+def create_password_reset(db: Session, email: str) -> models.PasswordReset:
+    otp = ''.join(secrets.choice(string.digits) for i in range(6))
+    expires_at = datetime.utcnow() + timedelta(minutes=15)
+    
+    # Invalidate previous active OTPs
+    db.query(models.PasswordReset).filter(
+        models.PasswordReset.email == email,
+        models.PasswordReset.is_used == False
+    ).update({"is_used": True})
+    
+    db_reset = models.PasswordReset(
+        email=email,
+        otp=otp,
+        expires_at=expires_at
+    )
+    db.add(db_reset)
+    db.commit()
+    db.refresh(db_reset)
+    return db_reset
+
+def verify_and_use_password_reset(db: Session, email: str, otp: str) -> bool:
+    reset_entry = db.query(models.PasswordReset).filter(
+        models.PasswordReset.email == email,
+        models.PasswordReset.otp == otp,
+        models.PasswordReset.is_used == False,
+        models.PasswordReset.expires_at > datetime.utcnow()
+    ).first()
+    
+    if not reset_entry:
+        return False
+        
+    reset_entry.is_used = True
+    db.commit()
+    return True
+
+def update_user_password(db: Session, email: str, new_password: str):
+    user = get_user_by_email(db, email)
+    if user:
+        user.hashed_password = get_password_hash(new_password)
+        db.commit()

@@ -33,3 +33,12 @@ export async function updateProfile(payload) {
   return data;
 }
 
+export async function requestPasswordReset(email) {
+  const { data } = await api.post("/password-reset/request-otp", { email });
+  return data;
+}
+
+export async function resetPassword(email, otp, new_password) {
+  const { data } = await api.post("/password-reset/reset-password", { email, otp, new_password });
+  return data;
+}

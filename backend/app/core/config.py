@@ -37,6 +37,15 @@ class Settings(BaseSettings):
     OLLAMA_MODEL: str = "mistral:latest"
     WHISPER_MODEL: str = "base"
 
+    # SMTP Configuration
+    SMTP_TLS: bool = True
+    SMTP_PORT: Optional[int] = 587
+    SMTP_HOST: Optional[str] = None
+    SMTP_USER: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    EMAILS_FROM_EMAIL: Optional[str] = None
+    EMAILS_FROM_NAME: Optional[str] = "Calaro Security"
+
     class Config:
         env_file = ".env"
         extra = "ignore"

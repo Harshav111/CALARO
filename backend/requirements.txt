@@ -15,3 +15,4 @@ httpx
 whisper
 numpy
 scipy
+fastapi-mail
